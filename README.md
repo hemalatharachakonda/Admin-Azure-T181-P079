@@ -16,6 +16,8 @@ Azure Lighthouse solves this by letting a provider tenant project delegated, rol
 Cross-tenant permission scoping mistakes are high impact. Because a single misconfigured registrationAssignment can grant a provider-side security group Owner or Contributor rights across an entire customer subscription instead of a single resource group, a scoping error doesn't just affect one tenant's blast radius — it can expose customer data or resources the MSP was never meant to touch. There is no "undo" once a bad delegation has been exercised.
 Auditing across tenants is fragmented. Azure Activity Logs, sign-in logs, and policy compliance data are generated and stored per-tenant by default. Without deliberate design, an MSP managing ten customer tenants ends up with ten disconnected logging silos, making it difficult to answer basic security questions like "which provider engineer touched which customer resource, and when?"
 
+# Cost
+Azure Lighthouse itself is unpaid — there's no extra cost for using Azure Lighthouse to manage Azure resources, and any Azure customer or partner can use it. It's a delegation/management layer, not a billed service.
 # The Design Problem
 
 How do you architect an Azure Lighthouse delegation model that gives a service provider exactly the access it needs to operate customer environments efficiently — no more, no less — while still producing a single, coherent audit trail across every delegated tenant?

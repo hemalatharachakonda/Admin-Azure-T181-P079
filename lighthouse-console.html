@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lighthouse Console — Delegated Access Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1A2B;
+    --panel: #16273D;
+    --panel-2: #1C304A;
+    --border: #26405E;
+    --text: #EDF2F7;
+    --text-dim: #94A3B8;
+    --accent: #4FB3BF;
+    --accent-dim: #2E6F76;
+    --green: #4CAF7D;
+    --amber: #E8A33D;
+    --coral: #E2574C;
+    --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { min-height: 100%; padding-bottom: 3rem; }
+
+  .app-header {
+    padding: 1.6rem 1.5rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  .brand-row { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .brand-mark {
+    width: 10px; height: 10px; border-radius: 2px;
+    background: var(--accent);
+    display: inline-block;
+    margin-right: 0.35rem;
+    transform: translateY(-1px);
+  }
+  h1 { font-size: 1.35rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .subtitle { color: var(--text-dim); font-size: 0.92rem; margin-top: 0.35rem; max-width: 62ch; line-height: 1.5; }
+
+  .tabs {
+    display: flex; gap: 0.25rem; margin-top: 1.3rem;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab-btn {
+    background: none; border: none; color: var(--text-dim);
+    font-family: var(--font-ui); font-size: 0.9rem; font-weight: 500;
+    padding: 0.7rem 0.9rem; cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  main { max-width: 980px; margin: 0 auto; padding: 1.5rem; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .panel-intro { color: var(--text-dim); font-size: 0.88rem; line-height: 1.55; max-width: 66ch; margin-bottom: 1.3rem; }
+
+  /* ---- Tenant table ---- */
+  .tenant-grid { display: flex; flex-direction: column; gap: 0.7rem; }
+  .tenant-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.95rem 1.1rem; display: grid;
+    grid-template-columns: 1.3fr 1fr 0.9fr 0.9fr auto;
+    gap: 0.8rem; align-items: center;
+  }
+  .tenant-name { font-weight: 600; font-size: 0.95rem; }
+  .tenant-name .customer-label { display: block; color: var(--text-dim); font-size: 0.76rem; font-weight: 400; margin-top: 0.15rem; }
+  .field-label { color: var(--text-dim); font-size: 0.7rem; text-transform: none; margin-bottom: 0.2rem; }
+  .field-value { font-family: var(--font-mono); font-size: 0.83rem; }
+  .risk-pill {
+    font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+    padding: 0.28rem 0.6rem; border-radius: 999px; justify-self: end;
+    white-space: nowrap;
+  }
+  .risk-low { background: rgba(76,175,125,0.14); color: var(--green); border: 1px solid rgba(76,175,125,0.35); }
+  .risk-med { background: rgba(232,163,61,0.14); color: var(--amber); border: 1px solid rgba(232,163,61,0.35); }
+  .risk-high { background: rgba(226,87,76,0.14); color: var(--coral); border: 1px solid rgba(226,87,76,0.35); }
+
+  /* ---- Risk checker ---- */
+  .checker-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.3rem; max-width: 560px;
+  }
+  .form-row { margin-bottom: 1rem; }
+  .form-row label { display: block; font-size: 0.82rem; color: var(--text-dim); margin-bottom: 0.4rem; }
+  select {
+    width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.6rem 0.7rem; font-family: var(--font-mono); font-size: 0.88rem;
+    appearance: none;
+  }
+  select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .result-box {
+    margin-top: 1.2rem; padding: 1rem 1.1rem; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel-2);
+  }
+  .result-level { font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; margin-bottom: 0.4rem; }
+  .result-text { color: var(--text-dim); font-size: 0.87rem; line-height: 1.55; }
+
+  /* ---- Audit log ---- */
+  .log-controls { margin-bottom: 1rem; max-width: 260px; }
+  .log-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .log-table th {
+    text-align: left; color: var(--text-dim); font-weight: 500; font-size: 0.75rem;
+    padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--border);
+  }
+  .log-table td { padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .log-tenant-tag {
+    font-family: var(--font-mono); font-size: 0.72rem; padding: 0.2rem 0.5rem;
+    border-radius: 4px; background: var(--panel-2); color: var(--accent); white-space: nowrap;
+  }
+  .log-time { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.78rem; white-space: nowrap; }
+  .log-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+
+  footer.note {
+    max-width: 980px; margin: 2rem auto 0; padding: 0 1.5rem;
+    color: var(--text-dim); font-size: 0.78rem; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 1.1rem;
+  }
+
+  @media (max-width: 720px) {
+    .tenant-card { grid-template-columns: 1fr 1fr; row-gap: 0.6rem; }
+    .risk-pill { grid-column: 1 / -1; justify-self: start; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand-row">
+    <h1><span class="brand-mark"></span>Lighthouse Console</h1>
+  </div>
+  <p class="subtitle">A working mockup of the delegated-access model from our design study — see exactly what a provider can reach in each customer tenant, check a role/scope pairing before granting it, and view activity across every tenant in one place.</p>
+
+  <nav class="tabs" role="tablist" aria-label="Console sections">
+    <button class="tab-btn active" data-tab="tenants" role="tab" aria-selected="true">Tenant delegations</button>
+    <button class="tab-btn" data-tab="checker" role="tab" aria-selected="false">Scope risk checker</button>
+    <button class="tab-btn" data-tab="audit" role="tab" aria-selected="false">Unified audit log</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- TENANTS -->
+  <section class="panel active" id="panel-tenants">
+    <p class="panel-intro">Every customer tenant we manage, and exactly what our access looks like in each one. Scope is fixed at the resource-group level wherever possible — the wider the scope, the higher the risk if that delegation is ever misused.</p>
+    <div class="tenant-grid" id="tenantGrid"></div>
+  </section>
+
+  <!-- CHECKER -->
+  <section class="panel" id="panel-checker">
+    <p class="panel-intro">Before granting a delegation, check what it actually exposes. Pick a role and a scope the way you would in the onboarding template — the console flags the blast radius before you deploy anything.</p>
+    <div class="checker-box">
+      <div class="form-row">
+        <label for="roleSelect">RBAC role</label>
+        <select id="roleSelect">
+          <option value="reader">Reader</option>
+          <option value="contributor">Contributor</option>
+          <option value="owner">Owner</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="scopeSelect">Scope</label>
+        <select id="scopeSelect">
+          <option value="rg">Single resource group</option>
+          <option value="sub">Entire subscription</option>
+          <option value="mg">Management group (multiple subscriptions)</option>
+        </select>
+      </div>
+      <div class="result-box" id="resultBox"></div>
+    </div>
+  </section>
+
+  <!-- AUDIT -->
+  <section class="panel" id="panel-audit">
+    <p class="panel-intro">Each tenant keeps its own activity log by default — this view is what our Resource Graph + Sentinel layer produces on top: one merged timeline, still tagged by source tenant.</p>
+    <div class="log-controls">
+      <label for="tenantFilter" style="display:block;font-size:0.8rem;color:var(--text-dim);margin-bottom:0.4rem;">Filter by tenant</label>
+      <select id="tenantFilter">
+        <option value="all">All tenants</option>
+        <option value="Contoso Ltd">Contoso Ltd</option>
+        <option value="Fabrikam Inc">Fabrikam Inc</option>
+        <option value="Northwind Traders">Northwind Traders</option>
+      </select>
+    </div>
+    <div class="log-scroll">
+      <table class="log-table">
+        <thead>
+          <tr><th>Time</th><th>Tenant</th><th>Actor</th><th>Action</th></tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer class="note">
+  Mock data for demonstration — no live Azure connection. Built to show the delegation model and monitoring approach from the design study in an interactive form.
+</footer>
+
+<script>
+  // ---- Tab switching ----
+  const tabs = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+      panels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Tenant data ----
+  const tenants = [
+    { name: 'Customer Tenant A', customer: 'Contoso Ltd', group: 'Tier1-Ops', role: 'Contributor', scope: 'Resource Group', risk: 'low' },
+    { name: 'Customer Tenant B', customer: 'Fabrikam Inc', group: 'Tier2-Ops', role: 'Reader', scope: 'Subscription', risk: 'med' },
+    { name: 'Customer Tenant C', customer: 'Northwind Traders', group: 'Security-Audit', role: 'Owner', scope: 'Subscription', risk: 'high' },
+  ];
+  const riskLabel = { low: 'Low risk', med: 'Moderate risk', high: 'High risk' };
+  const tenantGrid = document.getElementById('tenantGrid');
+  tenants.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'tenant-card';
+    card.innerHTML = `
+      <div class="tenant-name">${t.name}<span class="customer-label">${t.customer}</span></div>
+      <div><div class="field-label">AD group</div><div class="field-value">${t.group}</div></div>
+      <div><div class="field-label">Role</div><div class="field-value">${t.role}</div></div>
+      <div><div class="field-label">Scope</div><div class="field-value">${t.scope}</div></div>
+      <div class="risk-pill risk-${t.risk}">${riskLabel[t.risk]}</div>
+    `;
+    tenantGrid.appendChild(card);
+  });
+
+  // ---- Risk checker logic ----
+  const roleWeight = { reader: 1, contributor: 2, owner: 3 };
+  const scopeWeight = { rg: 1, sub: 2, mg: 3 };
+  const roleSelect = document.getElementById('roleSelect');
+  const scopeSelect = document.getElementById('scopeSelect');
+  const resultBox = document.getElementById('resultBox');
+
+  function evaluateRisk() {
+    const r = roleSelect.value, s = scopeSelect.value;
+    const score = roleWeight[r] * scopeWeight[s];
+    let level, color, text;
+    if (score <= 2) {
+      level = 'Low risk'; color = 'var(--green)';
+      text = 'Tightly scoped. A mistake or compromised credential here is limited to a single resource group and cannot cascade further.';
+    } else if (score <= 4) {
+      level = 'Moderate risk'; color = 'var(--amber)';
+      text = 'Worth a second look. This grants meaningful access across a wider boundary than most day-to-day tasks need — confirm the role is actually required at this scope before deploying.';
+    } else {
+      level = 'High risk'; color = 'var(--coral)';
+      text = 'This is exactly the pairing our design study flags as a scoping mistake: broad role, broad scope. A single misconfigured or compromised delegation here could expose far more than intended, with no way to undo actions already taken.';
+    }
+    resultBox.innerHTML = `<div class="result-level" style="color:${color}">${level}</div><div class="result-text">${text}</div>`;
+  }
+  roleSelect.addEventListener('change', evaluateRisk);
+  scopeSelect.addEventListener('change', evaluateRisk);
+  evaluateRisk();
+
+  // ---- Audit log data ----
+  const logs = [
+    { time: '09:14:02', tenant: 'Contoso Ltd', actor: 'engineer.priya@provider', action: 'Restarted VM web-prod-01' },
+    { time: '09:26:47', tenant: 'Fabrikam Inc', actor: 'engineer.arjun@provider', action: 'Read storage account config' },
+    { time: '10:02:15', tenant: 'Northwind Traders', actor: 'engineer.priya@provider', action: 'Modified NSG rule on subnet-app' },
+    { time: '10:41:33', tenant: 'Contoso Ltd', actor: 'engineer.divya@provider', action: 'Created snapshot of disk-lab-01' },
+    { time: '11:05:09', tenant: 'Fabrikam Inc', actor: 'engineer.arjun@provider', action: 'Viewed activity log (read-only)' },
+    { time: '11:22:58', tenant: 'Northwind Traders', actor: 'engineer.priya@provider', action: 'Deleted unused public IP' },
+    { time: '11:47:21', tenant: 'Contoso Ltd', actor: 'engineer.divya@provider', action: 'Scaled App Service plan' },
+  ];
+  const logBody = document.getElementById('logBody');
+  const tenantFilter = document.getElementById('tenantFilter');
+
+  function renderLogs() {
+    const val = tenantFilter.value;
+    logBody.innerHTML = '';
+    logs.filter(l => val === 'all' || l.tenant === val).forEach(l => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="log-time">${l.time}</td>
+        <td><span class="log-tenant-tag">${l.tenant}</span></td>
+        <td class="field-value" style="font-size:0.82rem;">${l.actor}</td>
+        <td>${l.action}</td>
+      `;
+      logBody.appendChild(tr);
+    });
+  }
+  tenantFilter.addEventListener('change', renderLogs);
+  renderLogs();
+</script>
+
+</body>
+</html>
